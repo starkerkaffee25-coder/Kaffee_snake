@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaffee!</title>
+</head>
+<body>
+  <h1>Kaffee!</h1>
+  <p>Esse é o meu primeiro site.</p>
+  <p>O objetivo deste site é unicamente para zoeira e testes de coisas aleatorias se você esta vendoné porque eu te mostrei ou você ta muito perdido.</p>
+
+  <h2>Pong</h2>
+  <p>Aqui um exemplo simples de Pong:</p>
+  
+  <style>
+  /*fundo preto*/
+  #retangulo {
+    width: 412px;       /* largura */
+    height: 206px;      /* altura */
+    background-color: black; /* cor */
+    position: absolute; /* permite mover livremente */
+    left: 0px;        /* posição X */
+    top: 300px;         /* posição Y */
+    overflow: hidden
+  }
+  #bola {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    position: absolute;
+    left: 103px;
+    top: 100px;
+    }
+  #player_1 {
+    width: 20px;       /* largura */
+    height: 100px;      /* altura */
+    background-color: white; /* cor */
+    position: absolute; /* permite mover livremente */
+    left: 0px;        /* posição X */
+    top: 50px;         /* posição Y */
+  }
+  #player_2 {
+    width: 20px;       /* largura */
+    height: 100px;      /* altura */
+    background-color: white; /* cor */
+    position: absolute; /* permite mover livremente */
+    left: 392px;        /* posição X */
+    top: 10px;         /* posição Y */
+  }
+  #p1_up {
+    width: 40px;
+    height: 40px;
+    background-color: #0074D9;
+    color: white;
+    font-size: 18px;
+    text-align: center;
+    
+    line-height: 40px;
+    border-radius: 8px;
+    position: absolute;
+    cursor: pointer;
+    left: 0px; /* centralizado no campo */
+    top: 0px;
+    transition: 0.2s;
+  }
+  #p1_down {
+    width: 40px;
+    height: 40px;
+    background-color: #0074D9;
+    color: white;
+    font-size: 18px;
+    text-align: center;
+    line-height: 40px;
+    border-radius: 8px;
+    position: absolute;
+    cursor: pointer;
+    left: 0px; /* centralizado no campo */
+    top: 165px;
+    transition: 0.2s;
+  }
+
+  </style>
+  <div id="retangulo">
+  <div id="bola"></div>
+  <div id="player_1"></div>
+  <div id="player_2"></div>
+  <div id="p1_up" onclick="p1_up()">▲</div>
+  <div id="p1_down" onclick="p1_down()">▼</div>
+  </div>
+  
+  <script>
+  const bola = document.getElementById("bola")
+  const retangulo = document.getElementById("retangulo")
+  const player_1 = document.getElementById("player_1")
+  const player_2 = document.getElementById("player_2")
+  
+  let bx = 103;  // posição inicial X
+  let by = 100  // posição inicial Y
+  let velx = 2; // velocidade X
+  let vely = 2; // velocidade Y
+  
+  let p1y = 50
+  let p2y = 50
+  let p1_vely = 9
+  let p2_vely = 5
+  
+  function p1_up(){
+    p1y-=p1_vely
+    player_1.style.top = p1y +"px";
+  }
+  function p1_down(){
+    p1y+=p1_vely
+    player_1.style.top = p1y +"px";
+  }
+  
+  function colisao(a, b) {
+  const A = a.getBoundingClientRect()
+  const B = b.getBoundingClientRect()
+  return (
+    A.left < B.right &&
+    A.right > B.left &&
+    A.top < B.bottom &&
+    A.bottom > B.top
+  )
+  }
+  function pong(){
+    bx+=velx
+    by+=vely    
+    if(p2y < by - (player_2.offsetHeight/2)){
+      p2y+=p2_vely
+      player_2.style.top = p2y + "px";
+    }
+    if(p2y > by - (player_2.offsetHeight/2)){
+      p2y-=p2_vely
+      player_2.style.top = p2y + "px";
+    }
+    
+    if(colisao(bola,player_1)){
+    velx=-velx
+    bx+=velx*1.6
+    }
+    if(colisao(bola,player_2)){
+    velx=-velx
+    bx+=velx*1.6
+    }
+    
+    while(p1y < 6){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
+      p1y+=1
+    }
+    while(p1y > 96){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
+      p1y-=1
+    }
+    while(p2y < 6){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
+      p2y+=1
+    }
+    while(p2y > 96){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
+      p2y-=1
+    }
+    
+    if (bx <= 0 || bx + bola.offsetWidth >= retangulo.clientWidth) {
+      velx = -velx // inverte direção horizontal
+      bx = 103
+      by = 100
+      p1y = 50
+      player_1.style.top = p1y + "px";
+      p2y = 50
+      player_2.style.top = p2y + "px";
+    }
+    if (by <= 0 || by + bola.offsetHeight >= retangulo.clientHeight) {
+      vely = -vely // inverte direção vertical
+    }
+    
+    bola.style.left = bx + "px"
+    bola.style.top = by + "px"
+    
+    requestAnimationFrame(pong)
+  }
+  
+  pong()
+  </script>
+
+</body>
+</html>
