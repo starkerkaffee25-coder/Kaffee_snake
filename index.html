@@ -135,7 +135,7 @@
         cabecaY * tamanho + (cabecaX - 1),
         cabecaY * tamanho + cabecaX
     ];
-    let pontos = 0
+    let pontos = 0;
 
     // ------------------ FUNÇÕES ------------------
     function atualizarCores() {
@@ -181,7 +181,7 @@
             cabecaY * tamanho + (cabecaX - 1),
             cabecaY * tamanho + cabecaX
         ];
-        valores.fill(0)
+        valores.fill(0);
         spawnComida();
         desenharCobra();
     }
@@ -217,6 +217,9 @@
         // atualizar na tela
         document.getElementById("pontuacao").textContent = pontos;
         spawnComida();
+        if (pontos == 67){
+        document.getElementById("pontuacao").textContent = "six seven!";
+        }
         // não remove a cauda → cobra cresce
         } else {
         // remove a cauda somente se a cobra não comeu
