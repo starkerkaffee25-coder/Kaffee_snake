@@ -1,36 +1,121 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Snake_Kaffee</title>
   <style>
     body {
-      background-color: #222;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+        font-family:"ROBOTO", sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; 
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
     }
 
     #grade {
-      display: grid;
-      grid-template-columns: repeat(16, 32px);
-      grid-template-rows: repeat(16, 32px);
-      background-color: #ccc;
+        border: 5px solid black;
+        display: grid;
+        grid-template-columns: repeat(16, 2vw);
+        grid-template-rows: repeat(16, 2vw);
+        background-color: #ccc;
     }
 
     .celula {
-      width: 32px;
-      height: 32px;
-      background-color: white;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
+        width: 2vw;
+        height: 2vw;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
     }
+
+    /* Esconde controles no PC */ 
+    #controles-celular {
+        display: none;
+    }
+
+    /* Estilos para celulares */
+    @media screen and (max-width: 768px) {
+        body {
+            justify-content: flex-start; /* alinha conteúdo no topo */
+            padding-top: 20px;           /* distância do topo */
+        }
+
+        h1, p {
+            font-size: larger; /* aumenta textos para celulares */
+            text-align: center;
+            margin: 5px 10px;
+        }
+        
+        #grade {
+            grid-template-columns: repeat(16, 4vw);
+            grid-template-rows: repeat(16, 4vw);
+        }
+
+        .celula {
+            width: 4vw;
+            height: 4vw;
+        }
+        
+        /* painel de controles para celular */
+        #controles-celular {
+            display: block !important;
+            position: relative;
+            width: 120px;      /* largura do painel de controle */
+            height: 120px;     /* altura do painel de controle */
+            margin: 20px auto 0 auto; /* espaço em cima para ficar abaixo do tabuleiro */
+        }
+        
+        /* estilo dos botões */
+        #controles-celular button {
+            width: 40px;       /* menor tamanho */
+            height: 40px;
+            font-size: 1.2rem; /* diminuiu a fonte */
+            border-radius: 10px;
+            position: absolute;
+        }
+
+        /* Posições individuais (D-pad) */
+        .btn-cima {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .btn-baixo {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .btn-esquerda {
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+        .btn-direita {
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+        }
+    }
+    
   </style>
 </head>
 <body>
 
+<h1 style="margin-top: 50px;">Jogo da cobrinha</h1>
+<p style="margin-top: 10px; margin-bottom: 10px;">
+    Este é um primeiro protótipo de jogo da cobrinha feito em Javascript, CSS e HTML.
+</p>
+
 <div id="grade"></div>
+
+<div id="controles-celular">
+    <button class="btn-cima" data-dir="cima">↑</button>
+    <button class="btn-esquerda" data-dir="esquerda">←</button>
+    <button class="btn-baixo" data-dir="baixo">↓</button>
+    <button class="btn-direita" data-dir="direita">→</button>
+</div>
 
 <script>
     // ------------------ CONSTANTES ------------------
@@ -46,8 +131,8 @@
     let cabecaX = 8;
     let cabecaY = 8;
     let cobra = [
-        cabecaY * tamanho + (cabecaX - 1), // corpo
-        cabecaY * tamanho + cabecaX        // cabeça
+        cabecaY * tamanho + (cabecaX - 1),
+        cabecaY * tamanho + cabecaX
     ];
     let tamanhoCobra = 2;
 
@@ -62,35 +147,24 @@
     }
 
     function desenharCobra() {
-        // limpa células que não são comida
         for (let i = 0; i < valores.length; i++) {
             if (valores[i] !== 3) valores[i] = 0;
         }
 
-        // marca a cobra inteira
         cobra.forEach((indice, i) => {
-        if (i === cobra.length - 1) {
-           // se for o último elemento do array, é a cabeça
-           valores[indice] = 1;
-        } else {
-           // caso contrário, é corpo
-           valores[indice] = 2;
-        }
-    });
-
+            valores[indice] = (i === cobra.length - 1) ? 1 : 2;
+        });
 
         atualizarCores();
     }
 
     function spawnComida() {
         const celulasVazias = [];
-
         for (let i = 0; i < valores.length; i++) {
             if (valores[i] === 0) celulasVazias.push(i);
         }
-
         const indiceAleatorio = celulasVazias[Math.floor(Math.random() * celulasVazias.length)];
-        valores[indiceAleatorio] = 3; // comida
+        valores[indiceAleatorio] = 3;
         atualizarCores();
     }
 
@@ -100,12 +174,10 @@
         direcao = dir.direita;
         proximaDirecao = direcao;
         tamanhoCobra = 2;
-
         cobra = [
             cabecaY * tamanho + (cabecaX - 1),
             cabecaY * tamanho + cabecaX
         ];
-
         valores.fill(0);
         spawnComida();
         desenharCobra();
@@ -122,7 +194,6 @@
         else if (direcao === dir.esquerda) novaX--;
         else if (direcao === dir.direita) novaX++;
 
-        // colisão com paredes
         if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
             alert("Game Over! A cobra saiu do campo.");
             resetarJogo();
@@ -131,14 +202,12 @@
 
         const novoIndice = novaY * tamanho + novaX;
 
-        // colisão consigo mesma
         if (cobra.includes(novoIndice)) {
             alert("Game Over! A cobra colidiu consigo mesma.");
             resetarJogo();
             return;
         }
 
-        // comida
         if (valores[novoIndice] === 3) {
             tamanhoCobra++;
             spawnComida();
@@ -159,7 +228,6 @@
     }
 
     // ------------------ EXECUÇÃO ------------------
-    // Cria a grade
     for (let i = 0; i < tamanho * tamanho; i++) {
         const celula = document.createElement("div");
         celula.className = "celula";
@@ -188,9 +256,28 @@
         }
     });
 
-    // tempo de movimento da cobra em ms
+    const botoes = document.querySelectorAll("#controles-celular button");
+    botoes.forEach(botao => {
+        botao.addEventListener("click", () => {
+            const dirBotao = botao.getAttribute("data-dir");
+            switch(dirBotao) {
+                case "cima":
+                    if(direcao !== dir.baixo) proximaDirecao = dir.cima;
+                    break;
+                case "baixo":
+                    if(direcao !== dir.cima) proximaDirecao = dir.baixo;
+                    break;
+                case "esquerda":
+                    if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
+                    break;
+                case "direita":
+                    if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
+                    break;
+            }
+        });
+    });
+
     setInterval(moverCobra, 300);
 </script>
-
 </body>
 </html>
