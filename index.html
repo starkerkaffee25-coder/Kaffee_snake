@@ -5,7 +5,7 @@
   <title>Snake_Kaffee</title>
   <style>
     body {
-        font-family:"ROBOTO", sans-serif;
+        font-family:Arial, sans-serif;
         display: flex;
         flex-direction: column;
         justify-content: center; 
@@ -105,9 +105,9 @@
 
 <h1 style="margin-top: 50px;">Jogo da cobrinha</h1>
 <p style="margin-top: 10px; margin-bottom: 10px;">
-  Este é um protótipo de jogo da cobrinha feito em javascript, CSS e HTML.
+    Este é um primeiro protótipo de jogo da cobrinha feito em Javascript, CSS e HTML.
 </p>
-<p>Kaffee!</p>
+<p>Pontuação: <span id="pontuacao">0</span></p>
 
 <div id="grade"></div>
 
@@ -135,7 +135,7 @@
         cabecaY * tamanho + (cabecaX - 1),
         cabecaY * tamanho + cabecaX
     ];
-    let tamanhoCobra = 2;
+    let pontos = 0
 
     // ------------------ FUNÇÕES ------------------
     function atualizarCores() {
@@ -170,6 +170,8 @@
     }
 
     function resetarJogo() {
+        pontos = 0;
+        document.getElementById("pontuacao").textContent = pontos;
         cabecaX = 8;
         cabecaY = 8;
         direcao = dir.direita;
@@ -179,7 +181,7 @@
             cabecaY * tamanho + (cabecaX - 1),
             cabecaY * tamanho + cabecaX
         ];
-        valores.fill(0);
+        valores.fill(0)
         spawnComida();
         desenharCobra();
     }
@@ -194,7 +196,8 @@
         else if (direcao === dir.baixo) novaY++;
         else if (direcao === dir.esquerda) novaX--;
         else if (direcao === dir.direita) novaX++;
-
+        
+        //game over
         if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
             alert("Game Over! A cobra saiu do campo.");
             resetarJogo();
@@ -208,13 +211,17 @@
             resetarJogo();
             return;
         }
-
+        // se for comida 
         if (valores[novoIndice] === 3) {
-            tamanhoCobra++;
-            spawnComida();
+        pontos++;
+        // atualizar na tela
+        document.getElementById("pontuacao").textContent = pontos;
+        spawnComida();
+        // não remove a cauda → cobra cresce
         } else {
-            const indiceCauda = cobra.shift();
-            valores[indiceCauda] = 0;
+        // remove a cauda somente se a cobra não comeu
+        const indiceCauda = cobra.shift();
+        valores[indiceCauda] = 0;
         }
 
         cabecaX = novaX;
