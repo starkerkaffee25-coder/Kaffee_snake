@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake_Kaffee</title>
+  <style>
+    body {
+      background-color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #grade {
+      display: grid;
+      grid-template-columns: repeat(16, 32px);
+      grid-template-rows: repeat(16, 32px);
+      background-color: #ccc;
+    }
+
+    .celula {
+      width: 32px;
+      height: 32px;
+      background-color: white;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+
+<div id="grade"></div>
+
+<script>
+    // ------------------ CONSTANTES ------------------
+    const dir = { cima: 0, baixo: 1, esquerda: 2, direita: 3 };
+    const grade = document.getElementById("grade");
+    const tamanho = 16;
+    const celulas = [];
+    const valores = [];
+
+    // ------------------ VARIÁVEIS MUTÁVEIS ------------------
+    let direcao = dir.direita;
+    let proximaDirecao = direcao;
+    let cabecaX = 8;
+    let cabecaY = 8;
+    let cobra = [
+        cabecaY * tamanho + (cabecaX - 1), // corpo
+        cabecaY * tamanho + cabecaX        // cabeça
+    ];
+    let tamanhoCobra = 2;
+
+    // ------------------ FUNÇÕES ------------------
+    function atualizarCores() {
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] === 0) celulas[i].style.backgroundColor = "white";
+            else if (valores[i] === 1) celulas[i].style.backgroundColor = "#0074D9";
+            else if (valores[i] === 2) celulas[i].style.backgroundColor = "green";
+            else if (valores[i] === 3) celulas[i].style.backgroundColor = "red";
+        }
+    }
+
+    function desenharCobra() {
+        // limpa células que não são comida
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] !== 3) valores[i] = 0;
+        }
+
+        // marca a cobra inteira
+        cobra.forEach((indice, i) => {
+        if (i === cobra.length - 1) {
+           // se for o último elemento do array, é a cabeça
+           valores[indice] = 1;
+        } else {
+           // caso contrário, é corpo
+           valores[indice] = 2;
+        }
+    });
+
+
+        atualizarCores();
+    }
+
+    function spawnComida() {
+        const celulasVazias = [];
+
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] === 0) celulasVazias.push(i);
+        }
+
+        const indiceAleatorio = celulasVazias[Math.floor(Math.random() * celulasVazias.length)];
+        valores[indiceAleatorio] = 3; // comida
+        atualizarCores();
+    }
+
+    function resetarJogo() {
+        cabecaX = 8;
+        cabecaY = 8;
+        direcao = dir.direita;
+        proximaDirecao = direcao;
+        tamanhoCobra = 2;
+
+        cobra = [
+            cabecaY * tamanho + (cabecaX - 1),
+            cabecaY * tamanho + cabecaX
+        ];
+
+        valores.fill(0);
+        spawnComida();
+        desenharCobra();
+    }
+
+    function moverCobra() {
+        direcao = proximaDirecao;
+
+        let novaX = cabecaX;
+        let novaY = cabecaY;
+
+        if (direcao === dir.cima) novaY--;
+        else if (direcao === dir.baixo) novaY++;
+        else if (direcao === dir.esquerda) novaX--;
+        else if (direcao === dir.direita) novaX++;
+
+        // colisão com paredes
+        if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
+            alert("Game Over! A cobra saiu do campo.");
+            resetarJogo();
+            return;
+        }
+
+        const novoIndice = novaY * tamanho + novaX;
+
+        // colisão consigo mesma
+        if (cobra.includes(novoIndice)) {
+            alert("Game Over! A cobra colidiu consigo mesma.");
+            resetarJogo();
+            return;
+        }
+
+        // comida
+        if (valores[novoIndice] === 3) {
+            tamanhoCobra++;
+            spawnComida();
+        } else {
+            const indiceCauda = cobra.shift();
+            valores[indiceCauda] = 0;
+        }
+
+        cabecaX = novaX;
+        cabecaY = novaY;
+        cobra.push(novoIndice);
+
+        cobra.forEach((indice, i) => {
+            valores[indice] = i === cobra.length - 1 ? 1 : 2;
+        });
+
+        atualizarCores();
+    }
+
+    // ------------------ EXECUÇÃO ------------------
+    // Cria a grade
+    for (let i = 0; i < tamanho * tamanho; i++) {
+        const celula = document.createElement("div");
+        celula.className = "celula";
+        grade.appendChild(celula);
+        celulas.push(celula);
+        valores.push(0);
+    }
+
+    desenharCobra();
+    spawnComida();
+
+    document.addEventListener("keydown", (event) => {
+        switch(event.key.toLowerCase()) {
+            case "w":
+                if(direcao !== dir.baixo) proximaDirecao = dir.cima;
+                break;
+            case "s":
+                if(direcao !== dir.cima) proximaDirecao = dir.baixo;
+                break;
+            case "a":
+                if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
+                break;
+            case "d":
+                if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
+                break;
+        }
+    });
+
+    // tempo de movimento da cobra em ms
+    setInterval(moverCobra, 300);
+</script>
+
+</body>
+</html>
