@@ -2,184 +2,195 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kaffee!</title>
+  <title>Snake_Kaffee</title>
+  <style>
+    body {
+      background-color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #grade {
+      display: grid;
+      grid-template-columns: repeat(16, 32px);
+      grid-template-rows: repeat(16, 32px);
+      background-color: #ccc;
+    }
+
+    .celula {
+      width: 32px;
+      height: 32px;
+      background-color: white;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
-  <h1>Kaffee!</h1>
-  <p>Esse é o meu primeiro site.</p>
-  <p>O objetivo deste site é unicamente para zoeira e testes de coisas aleatorias se você esta vendoné porque eu te mostrei ou você ta muito perdido.</p>
 
-  <h2>Pong</h2>
-  <p>Aqui um exemplo simples de Pong:</p>
-  
-  <style>
-  /*fundo preto*/
-  #retangulo {
-    width: 412px;       /* largura */
-    height: 206px;      /* altura */
-    background-color: black; /* cor */
-    position: absolute; /* permite mover livremente */
-    left: 0px;        /* posição X */
-    top: 300px;         /* posição Y */
-    overflow: hidden
-  }
-  #bola {
-    width: 20px;
-    height: 20px;
-    background-color: white;
-    border-radius: 50%;
-    position: absolute;
-    left: 103px;
-    top: 100px;
-    }
-  #player_1 {
-    width: 20px;       /* largura */
-    height: 100px;      /* altura */
-    background-color: white; /* cor */
-    position: absolute; /* permite mover livremente */
-    left: 0px;        /* posição X */
-    top: 50px;         /* posição Y */
-  }
-  #player_2 {
-    width: 20px;       /* largura */
-    height: 100px;      /* altura */
-    background-color: white; /* cor */
-    position: absolute; /* permite mover livremente */
-    left: 392px;        /* posição X */
-    top: 10px;         /* posição Y */
-  }
-  #p1_up {
-    width: 40px;
-    height: 40px;
-    background-color: #0074D9;
-    color: white;
-    font-size: 18px;
-    text-align: center;
-    
-    line-height: 40px;
-    border-radius: 8px;
-    position: absolute;
-    cursor: pointer;
-    left: 0px; /* centralizado no campo */
-    top: 0px;
-    transition: 0.2s;
-  }
-  #p1_down {
-    width: 40px;
-    height: 40px;
-    background-color: #0074D9;
-    color: white;
-    font-size: 18px;
-    text-align: center;
-    line-height: 40px;
-    border-radius: 8px;
-    position: absolute;
-    cursor: pointer;
-    left: 0px; /* centralizado no campo */
-    top: 165px;
-    transition: 0.2s;
-  }
+<div id="grade"></div>
 
-  </style>
-  <div id="retangulo">
-  <div id="bola"></div>
-  <div id="player_1"></div>
-  <div id="player_2"></div>
-  <div id="p1_up" onclick="p1_up()">▲</div>
-  <div id="p1_down" onclick="p1_down()">▼</div>
-  </div>
-  
-  <script>
-  const bola = document.getElementById("bola")
-  const retangulo = document.getElementById("retangulo")
-  const player_1 = document.getElementById("player_1")
-  const player_2 = document.getElementById("player_2")
-  
-  let bx = 103;  // posição inicial X
-  let by = 100  // posição inicial Y
-  let velx = 2; // velocidade X
-  let vely = 2; // velocidade Y
-  
-  let p1y = 50
-  let p2y = 50
-  let p1_vely = 9
-  let p2_vely = 5
-  
-  function p1_up(){
-    p1y-=p1_vely
-    player_1.style.top = p1y +"px";
-  }
-  function p1_down(){
-    p1y+=p1_vely
-    player_1.style.top = p1y +"px";
-  }
-  
-  function colisao(a, b) {
-  const A = a.getBoundingClientRect()
-  const B = b.getBoundingClientRect()
-  return (
-    A.left < B.right &&
-    A.right > B.left &&
-    A.top < B.bottom &&
-    A.bottom > B.top
-  )
-  }
-  function pong(){
-    bx+=velx
-    by+=vely    
-    if(p2y < by - (player_2.offsetHeight/2)){
-      p2y+=p2_vely
-      player_2.style.top = p2y + "px";
+<script>
+    // ------------------ CONSTANTES ------------------
+    const dir = { cima: 0, baixo: 1, esquerda: 2, direita: 3 };
+    const grade = document.getElementById("grade");
+    const tamanho = 16;
+    const celulas = [];
+    const valores = [];
+
+    // ------------------ VARIÁVEIS MUTÁVEIS ------------------
+    let direcao = dir.direita;
+    let proximaDirecao = direcao;
+    let cabecaX = 8;
+    let cabecaY = 8;
+    let cobra = [
+        cabecaY * tamanho + (cabecaX - 1), // corpo
+        cabecaY * tamanho + cabecaX        // cabeça
+    ];
+    let tamanhoCobra = 2;
+
+    // ------------------ FUNÇÕES ------------------
+    function atualizarCores() {
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] === 0) celulas[i].style.backgroundColor = "white";
+            else if (valores[i] === 1) celulas[i].style.backgroundColor = "#0074D9";
+            else if (valores[i] === 2) celulas[i].style.backgroundColor = "green";
+            else if (valores[i] === 3) celulas[i].style.backgroundColor = "red";
+        }
     }
-    if(p2y > by - (player_2.offsetHeight/2)){
-      p2y-=p2_vely
-      player_2.style.top = p2y + "px";
+
+    function desenharCobra() {
+        // limpa células que não são comida
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] !== 3) valores[i] = 0;
+        }
+
+        // marca a cobra inteira
+        cobra.forEach((indice, i) => {
+        if (i === cobra.length - 1) {
+           // se for o último elemento do array, é a cabeça
+           valores[indice] = 1;
+        } else {
+           // caso contrário, é corpo
+           valores[indice] = 2;
+        }
+    });
+
+
+        atualizarCores();
     }
-    
-    if(colisao(bola,player_1)){
-    velx=-velx
-    bx+=velx*1.6
+
+    function spawnComida() {
+        const celulasVazias = [];
+
+        for (let i = 0; i < valores.length; i++) {
+            if (valores[i] === 0) celulasVazias.push(i);
+        }
+
+        const indiceAleatorio = celulasVazias[Math.floor(Math.random() * celulasVazias.length)];
+        valores[indiceAleatorio] = 3; // comida
+        atualizarCores();
     }
-    if(colisao(bola,player_2)){
-    velx=-velx
-    bx+=velx*1.6
+
+    function resetarJogo() {
+        cabecaX = 8;
+        cabecaY = 8;
+        direcao = dir.direita;
+        proximaDirecao = direcao;
+        tamanhoCobra = 2;
+
+        cobra = [
+            cabecaY * tamanho + (cabecaX - 1),
+            cabecaY * tamanho + cabecaX
+        ];
+
+        valores.fill(0);
+        spawnComida();
+        desenharCobra();
     }
-    
-    while(p1y < 6){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
-      p1y+=1
+
+    function moverCobra() {
+        direcao = proximaDirecao;
+
+        let novaX = cabecaX;
+        let novaY = cabecaY;
+
+        if (direcao === dir.cima) novaY--;
+        else if (direcao === dir.baixo) novaY++;
+        else if (direcao === dir.esquerda) novaX--;
+        else if (direcao === dir.direita) novaX++;
+
+        // colisão com paredes
+        if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
+            alert("Game Over! A cobra saiu do campo.");
+            resetarJogo();
+            return;
+        }
+
+        const novoIndice = novaY * tamanho + novaX;
+
+        // colisão consigo mesma
+        if (cobra.includes(novoIndice)) {
+            alert("Game Over! A cobra colidiu consigo mesma.");
+            resetarJogo();
+            return;
+        }
+
+        // comida
+        if (valores[novoIndice] === 3) {
+            tamanhoCobra++;
+            spawnComida();
+        } else {
+            const indiceCauda = cobra.shift();
+            valores[indiceCauda] = 0;
+        }
+
+        cabecaX = novaX;
+        cabecaY = novaY;
+        cobra.push(novoIndice);
+
+        cobra.forEach((indice, i) => {
+            valores[indice] = i === cobra.length - 1 ? 1 : 2;
+        });
+
+        atualizarCores();
     }
-    while(p1y > 96){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
-      p1y-=1
+
+    // ------------------ EXECUÇÃO ------------------
+    // Cria a grade
+    for (let i = 0; i < tamanho * tamanho; i++) {
+        const celula = document.createElement("div");
+        celula.className = "celula";
+        grade.appendChild(celula);
+        celulas.push(celula);
+        valores.push(0);
     }
-    while(p2y < 6){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
-      p2y+=1
-    }
-    while(p2y > 96){ /*|| p1y + retangulo.offsetHeigth >= retangulo.clientHeight){*/
-      p2y-=1
-    }
-    
-    if (bx <= 0 || bx + bola.offsetWidth >= retangulo.clientWidth) {
-      velx = -velx // inverte direção horizontal
-      bx = 103
-      by = 100
-      p1y = 50
-      player_1.style.top = p1y + "px";
-      p2y = 50
-      player_2.style.top = p2y + "px";
-    }
-    if (by <= 0 || by + bola.offsetHeight >= retangulo.clientHeight) {
-      vely = -vely // inverte direção vertical
-    }
-    
-    bola.style.left = bx + "px"
-    bola.style.top = by + "px"
-    
-    requestAnimationFrame(pong)
-  }
-  
-  pong()
-  </script>
+
+    desenharCobra();
+    spawnComida();
+
+    document.addEventListener("keydown", (event) => {
+        switch(event.key.toLowerCase()) {
+            case "w":
+                if(direcao !== dir.baixo) proximaDirecao = dir.cima;
+                break;
+            case "s":
+                if(direcao !== dir.cima) proximaDirecao = dir.baixo;
+                break;
+            case "a":
+                if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
+                break;
+            case "d":
+                if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
+                break;
+        }
+    });
+
+    // tempo de movimento da cobra em ms
+    setInterval(moverCobra, 300);
+</script>
 
 </body>
 </html>
