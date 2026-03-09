@@ -1,196 +1,415 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Snake_Kaffee</title>
-  <style>
-    body {
-      background-color: #222;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=0.6">
+<title>Xadrez</title>
 
-    #grade {
-      display: grid;
-      grid-template-columns: repeat(16, 32px);
-      grid-template-rows: repeat(16, 32px);
-      background-color: #ccc;
-    }
+<style>
 
-    .celula {
-      width: 32px;
-      height: 32px;
-      background-color: white;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-  </style>
+/* ===== Layout da página ===== */
+body{
+display:flex;
+flex-direction:column;
+align-items:center;
+min-height:100vh;
+padding-top:20px;
+}
+
+/* ===== Tabuleiro ===== */
+#grid{
+display:grid;
+grid-template-columns:repeat(8,80px);
+grid-template-rows:repeat(8,80px);
+border:3px solid black;
+}
+
+/* casas */
+#grid div{
+width:80px;
+height:80px;
+}
+
+/* cores do tabuleiro */
+.claro{background:#eee;}
+.escuro{background:#555;}
+
+/* sprite das peças */
+.peca{
+background-image:url("chess_pieces.png");
+background-repeat:no-repeat;
+background-size:498px 166px;
+}
+
+/* destaque peça selecionada */
+.selecionado{
+outline:4px solid black;
+}
+
+/* destaque movimentos possíveis */
+.movimento{
+box-shadow: inset 0 0 0 4px rgba(0,255,0,0.6);
+}
+
+/* texto de status */
+#status{
+margin-bottom:20px;
+font-size:20px;
+}
+
+/* Barra de avaliação simples */
+#avaliacao-container {
+    width: 30px;
+    height: 640px; /* 8 casas x 80px */
+    border: 2px solid black;
+    background: #ccc;
+    position: relative;
+}
+
+#avaliacao-bar {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    height: 50%; /* inicia no meio */
+    background-color: rgb(0, 255, 0); /* parte superior = brancas */
+}
+
+#avaliacao-bar-preto {
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    height: 50%;
+    background-color: rgb(255, 0, 0); /* parte inferior = pretas */
+}
+
+</style>
 </head>
+
 <body>
 
-<div id="grade"></div>
+<div style="display:flex; gap:20px; align-items:flex-start;">
+<div id="grid"></div>
+<div id="avaliacao-container">
+    <div id="avaliacao-bar"></div>
+    <div id="avaliacao-bar-preto"></div>
+</div>
+</div>
+
+<div id="status"></div>
 
 <script>
-    // ------------------ CONSTANTES ------------------
-    const dir = { cima: 0, baixo: 1, esquerda: 2, direita: 3 };
-    const grade = document.getElementById("grade");
-    const tamanho = 16;
-    const celulas = [];
-    const valores = [];
 
-    // ------------------ VARIÁVEIS MUTÁVEIS ------------------
-    let direcao = dir.direita;
-    let proximaDirecao = direcao;
-    let cabecaX = 8;
-    let cabecaY = 8;
-    let cobra = [
-        cabecaY * tamanho + (cabecaX - 1), // corpo
-        cabecaY * tamanho + cabecaX        // cabeça
-    ];
-    let tamanhoCobra = 2;
+/* =====================================================
+   REPRESENTAÇÃO DO TABULEIRO
+   ===================================================== */
 
-    // ------------------ FUNÇÕES ------------------
-    function atualizarCores() {
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] === 0) celulas[i].style.backgroundColor = "white";
-            else if (valores[i] === 1) celulas[i].style.backgroundColor = "#0074D9";
-            else if (valores[i] === 2) celulas[i].style.backgroundColor = "green";
-            else if (valores[i] === 3) celulas[i].style.backgroundColor = "red";
+let tabuleiro=[
+
+[[5,0],[4,0],[3,0],[2,0],[1,0],[3,0],[4,0],[5,0]],
+[[6,0],[6,0],[6,0],[6,0],[6,0],[6,0],[6,0],[6,0]],
+[0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0],
+[0,0,0,0,0,0,0,0],
+[[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1]],
+[[5,1],[4,1],[3,1],[2,1],[1,1],[3,1],[4,1],[5,1]]
+
+]
+
+let grid=document.getElementById("grid")
+let status=document.getElementById("status")
+
+let selecionado=null
+let movimentos=[]
+let turno=0 // 0 = brancas(bot), 1 = pretas(player)
+
+const VALOR_PECA = {1:1000,2:9,3:3.15,4:3,5:5,6:1}
+const VALOR_CONTROLE = 0.1
+
+/* =====================================================
+   FUNÇÕES AUXILIARES
+   ===================================================== */
+
+function dentro(l,c){return l>=0 && l<8 && c>=0 && c<8}
+
+function atualizaBarraAvaliação(valor){
+    if(valor > 100) valor = 100
+    if(valor < -100) valor = -100
+    let totalAltura = 640;
+    let meio = totalAltura/2;
+    let deslocamento = (valor/100)*meio;
+    let barVerde = document.getElementById("avaliacao-bar")
+    let barVermelho = document.getElementById("avaliacao-bar-preto")
+    barVerde.style.height = `${meio+deslocamento}px`
+    barVermelho.style.top = `${meio+deslocamento}px`
+    barVermelho.style.height = `${meio-deslocamento}px`
+}
+
+/* =====================================================
+   MOVIMENTOS
+   ===================================================== */
+
+function ataquesPossiveis(l,c){
+    let peca=tabuleiro[l][c]
+    let tipo=peca[0], cor=peca[1], m=[]
+    if(tipo==6){
+        let dir = cor? -1:1
+        if(dentro(l+dir,c) && tabuleiro[l+dir][c]==0) m.push([l+dir,c])
+        if((cor&&l==6)||(!cor&&l==1))
+          if(tabuleiro[l+dir][c]==0 && tabuleiro[l+dir*2][c]==0) m.push([l+dir*2,c])
+        for(let dc of [-1,1]){
+            let nl=l+dir, nc=c+dc
+            if(dentro(nl,nc) && tabuleiro[nl][nc]!=0 && tabuleiro[nl][nc][1]!=cor) m.push([nl,nc])
         }
     }
+    if(tipo==4){
+        let passos=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+        for(let p of passos){
+            let nl=l+p[0], nc=c+p[1]
+            if(dentro(nl,nc) && (tabuleiro[nl][nc]==0 || tabuleiro[nl][nc][1]!=cor)) m.push([nl,nc])
+        }
+    }
+    if(tipo==5||tipo==2){
+        let dirs=[[1,0],[-1,0],[0,1],[0,-1]]
+        for(let d of dirs){
+            let nl=l+d[0], nc=c+d[1]
+            while(dentro(nl,nc)){
+                if(tabuleiro[nl][nc]==0) m.push([nl,nc])
+                else{if(tabuleiro[nl][nc][1]!=cor) m.push([nl,nc]); break}
+                nl+=d[0]; nc+=d[1]
+            }
+        }
+    }
+    if(tipo==3||tipo==2){
+        let dirs=[[1,1],[1,-1],[-1,1],[-1,-1]]
+        for(let d of dirs){
+            let nl=l+d[0], nc=c+d[1]
+            while(dentro(nl,nc)){
+                if(tabuleiro[nl][nc]==0) m.push([nl,nc])
+                else{if(tabuleiro[nl][nc][1]!=cor) m.push([nl,nc]); break}
+                nl+=d[0]; nc+=d[1]
+            }
+        }
+    }
+    if(tipo==1){
+        let dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]
+        for(let d of dirs){
+            let nl=l+d[0], nc=c+d[1]
+            if(dentro(nl,nc) && (tabuleiro[nl][nc]==0 || tabuleiro[nl][nc][1]!=cor)) m.push([nl,nc])
+        }
+    }
+    return m
+}
 
-    function desenharCobra() {
-        // limpa células que não são comida
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] !== 3) valores[i] = 0;
+function movimentosPossiveis(l,c){
+    let m = ataquesPossiveis(l,c)
+    let legais=[]
+    for(let mv of m) if(movimentoSeguro(l,c,mv[0],mv[1])) legais.push(mv)
+    return legais
+}
+
+function reiEmXeque(cor){
+    let rl,rc
+    for(let l=0;l<8;l++) for(let c=0;c<8;c++)
+      if(tabuleiro[l][c]!=0 && tabuleiro[l][c][0]==1 && tabuleiro[l][c][1]==cor){rl=l;rc=c}
+    for(let l=0;l<8;l++) for(let c=0;c<8;c++)
+      if(tabuleiro[l][c]!=0 && tabuleiro[l][c][1]!=cor){
+          let mov=ataquesPossiveis(l,c)
+          for(let m of mov) if(m[0]==rl && m[1]==rc) return true
+      }
+    return false
+}
+
+function movimentoSeguro(l1,c1,l2,c2){
+    let p=tabuleiro[l1][c1], d=tabuleiro[l2][c2]
+    tabuleiro[l2][c2]=p; tabuleiro[l1][c1]=0
+    let seguro = !reiEmXeque(p[1])
+    tabuleiro[l1][c1]=p; tabuleiro[l2][c2]=d
+    return seguro
+}
+
+function promoverPeao(l,c){
+    let p = tabuleiro[l][c]
+    if(p==0) return
+    if(p[0]==6){
+        if(p[1]==0 && l==7) tabuleiro[l][c]=[2,0]
+        if(p[1]==1 && l==0) tabuleiro[l][c]=[2,1]
+    }
+}
+
+function temMovimentos(cor){
+    for(let l=0;l<8;l++) for(let c=0;c<8;c++){
+        let p=tabuleiro[l][c]
+        if(p!=0 && p[1]==cor){ let mov=movimentosPossiveis(l,c); if(mov.length>0) return true }
+    }
+    return false
+}
+
+function verificarFimDeJogo(){
+    if(reiEmXeque(turno) && !temMovimentos(turno)){
+        status.innerText = turno==0?"Xeque-mate! Pretas vencem!":"Xeque-mate! Brancas vencem!"
+        turno=-1; setTimeout(reiniciarJogo,3000); return
+    }
+    if(!reiEmXeque(turno) && !temMovimentos(turno)){
+        status.innerText="Empate!"
+        turno=-1; setTimeout(reiniciarJogo,3000)
+    }
+}
+
+/* =====================================================
+   MOVIMENTOS LEGAIS DO JOGADOR
+   ===================================================== */
+
+function movimentosCor(cor){
+    let lista=[]
+    for(let l=0;l<8;l++) for(let c=0;c<8;c++){
+        let p=tabuleiro[l][c]
+        if(p!=0 && p[1]==cor){
+            let movs = movimentosPossiveis(l,c)
+            for(let m of movs) lista.push([l,c,m[0],m[1]])
+        }
+    }
+    return lista
+}
+
+/* =====================================================
+   AVALIAÇÃO DO TABULEIRO
+   ===================================================== */
+
+function avaliarTabuleiro(corBot){
+    let score=0
+    for(let l=0;l<8;l++) for(let c=0;c<8;c++){
+        let p=tabuleiro[l][c]
+        if(p!=0){
+            let tipo=p[0], cor=p[1], val=VALOR_PECA[tipo]
+            score += (cor==corBot)? val : -val
+            let ataques=ataquesPossiveis(l,c)
+            score += (cor==corBot)? ataques.length*VALOR_CONTROLE : -ataques.length*VALOR_CONTROLE
+        }
+    }
+    return score
+}
+
+/* =====================================================
+   BOT INTELIGENTE
+   ===================================================== */
+
+function movimentoAnalitico(){
+    if(turno!=0) return
+    let melhorMov=null, melhorScore=-Infinity
+    let listaBot = movimentosCor(0)
+    if(listaBot.length==0) return
+
+    for(let m of listaBot){
+        // salva estado
+        let pOrig=tabuleiro[m[0]][m[1]], pDest=tabuleiro[m[2]][m[3]]
+        tabuleiro[m[2]][m[3]] = pOrig; tabuleiro[m[0]][m[1]]=0
+        promoverPeao(m[2],m[3])
+
+        // avalia resposta do jogador
+        let piorResposta=Infinity
+        let movimentosPlayer=movimentosCor(1)
+        for(let r of movimentosPlayer){
+            let rOrig=tabuleiro[r[0]][r[1]], rDest=tabuleiro[r[2]][r[3]]
+            tabuleiro[r[2]][r[3]]=rOrig; tabuleiro[r[0]][r[1]]=0
+            promoverPeao(r[2],r[3])
+            let score=avaliarTabuleiro(0)
+            if(score<piorResposta) piorResposta=score
+            tabuleiro[r[0]][r[1]]=rOrig; tabuleiro[r[2]][r[3]]=rDest
         }
 
-        // marca a cobra inteira
-        cobra.forEach((indice, i) => {
-        if (i === cobra.length - 1) {
-           // se for o último elemento do array, é a cabeça
-           valores[indice] = 1;
-        } else {
-           // caso contrário, é corpo
-           valores[indice] = 2;
-        }
-    });
+        if(piorResposta>melhorScore){melhorScore=piorResposta; melhorMov=m}
 
-
-        atualizarCores();
+        // desfaz
+        tabuleiro[m[0]][m[1]]=pOrig; tabuleiro[m[2]][m[3]]=pDest
     }
 
-    function spawnComida() {
-        const celulasVazias = [];
-
-        for (let i = 0; i < valores.length; i++) {
-            if (valores[i] === 0) celulasVazias.push(i);
-        }
-
-        const indiceAleatorio = celulasVazias[Math.floor(Math.random() * celulasVazias.length)];
-        valores[indiceAleatorio] = 3; // comida
-        atualizarCores();
+    if(melhorMov){
+        tabuleiro[melhorMov[2]][melhorMov[3]] = tabuleiro[melhorMov[0]][melhorMov[1]]
+        tabuleiro[melhorMov[0]][melhorMov[1]] = 0
+        promoverPeao(melhorMov[2],melhorMov[3])
+        turno=1
+        verificarFimDeJogo()
+        desenhar()
+        let valorAtual = avaliarTabuleiro(0)
+        atualizaBarraAvaliação(Math.round(valorAtual))
     }
+}
 
-    function resetarJogo() {
-        cabecaX = 8;
-        cabecaY = 8;
-        direcao = dir.direita;
-        proximaDirecao = direcao;
-        tamanhoCobra = 2;
+/* =====================================================
+   DESENHA O TABULEIRO
+   ===================================================== */
 
-        cobra = [
-            cabecaY * tamanho + (cabecaX - 1),
-            cabecaY * tamanho + cabecaX
-        ];
+function desenhar(){
+    grid.innerHTML=""
+    if(reiEmXeque(0)) status.innerText="Rei branco em xeque!"
+    else if(reiEmXeque(1)) status.innerText="Rei preto em xeque!"
+    else status.innerText=""
 
-        valores.fill(0);
-        spawnComida();
-        desenharCobra();
+    for(let linha=0;linha<8;linha++)
+    for(let coluna=0;coluna<8;coluna++){
+        let item=document.createElement("div")
+        item.classList.add((linha+coluna)%2?"escuro":"claro")
+        if(selecionado && selecionado[0]==linha && selecionado[1]==coluna) item.classList.add("selecionado")
+        for(let m of movimentos) if(m[0]==linha && m[1]==coluna) item.classList.add("movimento")
+        let peca=tabuleiro[linha][coluna]
+        if(peca!=0){
+            item.classList.add("peca")
+            let sprite=83, x=(peca[0]-1)*sprite, y=peca[1]*sprite
+            item.style.backgroundPosition=`-${x}px -${y}px`
+        }
+
+        item.onclick=function(){
+            if(turno!=1) return
+            let peca=tabuleiro[linha][coluna]
+            if(selecionado==null){
+                if(peca!=0 && peca[1]==1){selecionado=[linha,coluna]; movimentos=movimentosPossiveis(linha,coluna)}
+            }else{
+                for(let m of movimentos)
+                if(m[0]==linha && m[1]==coluna){
+                    let origem=selecionado
+                    tabuleiro[linha][coluna]=tabuleiro[origem[0]][origem[1]]
+                    tabuleiro[origem[0]][origem[1]]=0
+                    promoverPeao(linha,coluna)
+                    selecionado=null; movimentos=[]; turno=0
+                    verificarFimDeJogo(); desenhar()
+                    setTimeout(movimentoAnalitico,300)
+                    return
+                }
+                if(peca!=0 && peca[1]==1){selecionado=[linha,coluna]; movimentos=movimentosPossiveis(linha,coluna)}
+                else{selecionado=null; movimentos=[]}
+            }
+            desenhar()
+        }
+        grid.appendChild(item)
     }
+}
 
-    function moverCobra() {
-        direcao = proximaDirecao;
+/* =====================================================
+   REINICIA O JOGO
+   ===================================================== */
 
-        let novaX = cabecaX;
-        let novaY = cabecaY;
+function reiniciarJogo(){
+    tabuleiro=[
+        [[5,0],[4,0],[3,0],[2,0],[1,0],[3,0],[4,0],[5,0]],
+        [[6,0],[6,0],[6,0],[6,0],[6,0],[6,0],[6,0],[6,0]],
+        [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
+        [[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1],[6,1]],
+        [[5,1],[4,1],[3,1],[2,1],[1,1],[3,1],[4,1],[5,1]]
+    ]
+    selecionado=null; movimentos=[]; turno=0
+    desenhar()
+    setTimeout(movimentoAnalitico,300)
+}
 
-        if (direcao === dir.cima) novaY--;
-        else if (direcao === dir.baixo) novaY++;
-        else if (direcao === dir.esquerda) novaX--;
-        else if (direcao === dir.direita) novaX++;
+/* =====================================================
+   INICIA O JOGO
+   ===================================================== */
 
-        // colisão com paredes
-        if (novaX < 0 || novaX >= tamanho || novaY < 0 || novaY >= tamanho) {
-            alert("Game Over! A cobra saiu do campo.");
-            resetarJogo();
-            return;
-        }
+desenhar()
+setTimeout(movimentoAnalitico,300)
 
-        const novoIndice = novaY * tamanho + novaX;
-
-        // colisão consigo mesma
-        if (cobra.includes(novoIndice)) {
-            alert("Game Over! A cobra colidiu consigo mesma.");
-            resetarJogo();
-            return;
-        }
-
-        // comida
-        if (valores[novoIndice] === 3) {
-            tamanhoCobra++;
-            spawnComida();
-        } else {
-            const indiceCauda = cobra.shift();
-            valores[indiceCauda] = 0;
-        }
-
-        cabecaX = novaX;
-        cabecaY = novaY;
-        cobra.push(novoIndice);
-
-        cobra.forEach((indice, i) => {
-            valores[indice] = i === cobra.length - 1 ? 1 : 2;
-        });
-
-        atualizarCores();
-    }
-
-    // ------------------ EXECUÇÃO ------------------
-    // Cria a grade
-    for (let i = 0; i < tamanho * tamanho; i++) {
-        const celula = document.createElement("div");
-        celula.className = "celula";
-        grade.appendChild(celula);
-        celulas.push(celula);
-        valores.push(0);
-    }
-
-    desenharCobra();
-    spawnComida();
-
-    document.addEventListener("keydown", (event) => {
-        switch(event.key.toLowerCase()) {
-            case "w":
-                if(direcao !== dir.baixo) proximaDirecao = dir.cima;
-                break;
-            case "s":
-                if(direcao !== dir.cima) proximaDirecao = dir.baixo;
-                break;
-            case "a":
-                if(direcao !== dir.direita) proximaDirecao = dir.esquerda;
-                break;
-            case "d":
-                if(direcao !== dir.esquerda) proximaDirecao = dir.direita;
-                break;
-        }
-    });
-
-    // tempo de movimento da cobra em ms
-    setInterval(moverCobra, 300);
 </script>
-
 </body>
 </html>
